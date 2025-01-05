@@ -2,7 +2,12 @@ import mongoose from 'mongoose';
 import logger from './log.init';
 
 const connectDB = async (): Promise<void> => {
-  const mongoUri = process.env.MONGO_DB_URI;
+  let mongoUri : string
+  if(process.env.NODE_ENV !== 'production'){
+    mongoUri = process.env.MONGO_DEV_URL || ''
+  }else{
+    mongoUri = process.env.MONGO_DB_URI || ''
+  }
 
   if (!mongoUri) {
     logger.error('MongoDB URI is not defined in the environment variables');
@@ -12,6 +17,7 @@ const connectDB = async (): Promise<void> => {
   const connectWithRetry = async () => {
     try {
       await mongoose.connect(mongoUri);
+      console.log(mongoUri)
       logger.info('Successfully connected to MongoDB');
     } catch (error) {
       logger.error('Failed to connect to MongoDB', { error });
