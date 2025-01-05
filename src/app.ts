@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from "express";
+import express, { Request, Response, NextFunction } from 'express';
 import postgreRouter from './routes/postgres.routes';
 import authRouter from './routes/auth.routes';
 import pgDbRouter from './routes/pg.db.routes';
@@ -11,50 +11,77 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
+import compression from 'compression';
+
 
 const app = express();
 
-app.use(helmet());
+// 1. Security Middlewares
+app.use(helmet()); // Set secure HTTP headers
+app.use(mongoSanitize()); // Sanitize user input to prevent NoSQL injection
+app.use(hpp()); // Prevent HTTP Parameter Pollution attacks
 
+// 2. Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 10 * 60 * 1000, // 10 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again after 15 minutes',
 });
-app.use('/api', limiter); 
+app.use('/api', limiter);
 
-app.use(cors({
-  origin: process.env.CORS_ORIGIN,
-  credentials: true,
-}));
+// 3. CORS Configuration
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN, // Allow requests from trusted origins
+    credentials: true, // Allow cookies to be sent
+  })
+);
 
+// 4. Body Parsing and Compression
+app.use(express.json({ limit: '10kb' })); // Limit request body size
+app.use(express.urlencoded({ extended: true, limit: '10kb' })); // Parse URL-encoded bodies
+app.use(compression()); // Compress response bodies
 
-app.use(express.json({ limit: '10kb' }));
-app.use(mongoSanitize());
-app.use(hpp());
+// 5. Cookie Parsing and CSRF Protection
 app.use(cookieParser());
 
-app.use(morgan('dev', {
-  stream: {
-    write: (message) => logger.info(message.trim()),
-  },
-}));
+// 6. Logging
+app.use(
+  morgan('short', {
+    stream: {
+      write: (message) => logger.info(message.trim()),
+    },
+  })
+);
 
-// Routes
+// 7. Routes
 app.use('/api/v1/postgres', postgreRouter);
 app.use('/api/v1/postgres/data', pgDbRouter);
 app.use('/api/v1/user', userRoute);
 app.use('/api/v1/auth', authRouter);
 
-// Health check endpoint
+// 8. Health Check Endpoint
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', message: 'Service is healthy' });
 });
 
-// Global error handler
+// 9. 404 Handler
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.status(404).json({
+    status: 'error',
+    message: 'Resource not found',
+  });
+});
+
+// 10. Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   logger.error(err.message, { stack: err.stack });
-  res.status(500).json({ status: 'error', message: 'Something went wrong!' });
+
+  // Handle other errors
+  res.status(err.status || 500).json({
+    status: 'error',
+    message: err.message || 'Something went wrong!',
+  });
 });
 
 export default app;

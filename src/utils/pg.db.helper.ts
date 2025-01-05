@@ -1,6 +1,5 @@
 import { Client } from 'pg';
 import logger from '../config/log.init';
-import docker from '../config/dockerRode';
 
 async function getAllTables(connectionString: string): Promise<string[]> {
     const client = new Client({

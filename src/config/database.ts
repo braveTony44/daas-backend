@@ -17,7 +17,6 @@ const connectDB = async (): Promise<void> => {
   const connectWithRetry = async () => {
     try {
       await mongoose.connect(mongoUri);
-      console.log(mongoUri)
       logger.info('Successfully connected to MongoDB');
     } catch (error) {
       logger.error('Failed to connect to MongoDB', { error });
