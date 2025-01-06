@@ -25,6 +25,7 @@
     "morgan": "^1.10.0",
     "node-cache": "^5.1.2",
     "pg": "^8.13.1",
+    "pm2": "^5.4.3",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
   },

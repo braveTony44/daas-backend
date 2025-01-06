@@ -30,15 +30,10 @@ COPY --from=builder /app/build/dist ./dist
 # Copy package.json and package-lock.json for production dependencies
 COPY --from=builder /app/build/package*.json .
 
-# Install only production dependencies
-RUN npm install --omit=dev
+# Install only production dependencies and PM2 globally
+RUN npm install --omit=dev && npm install -g pm2
 
-# Set environment variables for production
-ENV NODE_ENV=production
-ENV PORT=4000
 
-# Expose the port the app runs on
-EXPOSE 4000
-
-# Run the application
-CMD ["node", "dist/index.js"]
+# Run the application using PM2
+# CMD ["pm2-runtime", "dist/index.js", "-i", "max"]
+CMD [ "pm2","start","dist/index.js" ]
